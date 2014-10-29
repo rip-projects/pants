@@ -1,0 +1,27 @@
+{
+  "name": "pants",
+  "version": "0.0.1",
+  "authors": [
+    "Ganesha <reekoheek@gmail.com>"
+  ],
+  "description": "Dont make your web shame without pants",
+  "keywords": [
+    "component",
+    "web",
+    "component",
+    "js",
+    "jquery"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "private": true,
+  "dependencies": {
+    "platform": "~1.2.0"
+  }
+}
