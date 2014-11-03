@@ -9,8 +9,7 @@
     "component",
     "web",
     "component",
-    "js",
-    "jquery"
+    "js"
   ],
   "license": "MIT",
   "ignore": [
@@ -22,7 +21,6 @@
   ],
   "private": true,
   "dependencies": {
-    "platform": "~1.2.0",
-    "jquery": "~2.1.1"
+    "platform": "~1.2.0"
   }
 }
