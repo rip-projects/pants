@@ -16,6 +16,8 @@
  * namespace pants.observe
  ******************************************************************************/
 
+    var DEBOUNCE_TIMEOUT = 50;
+
     var observe = function(context, path) {
         return new Observer(context, path);
     };
@@ -48,7 +50,6 @@
         } else {
             Object.unobserve(this.context, this.objectCallback__);
         }
-
     };
 
     ObservableContext.prototype.callback_ = function(changes) {
@@ -61,9 +62,14 @@
                 var pathO = Path.get(path);
 
                 if (change.type === 'splice') {
-                    callbacks[''].forEach(function(callback) {
-                        callback(change);
-                    });
+                    try {
+                        console.log(callbacks);
+                        callbacks[''].forEach(function(callback) {
+                            callback(change);
+                        });
+                    } catch(e) {
+                        console.log(e);
+                    }
                 } else if (change.name === path) {
                     callbacks[path].forEach(function(callback) {
                         callback(change);
@@ -119,7 +125,25 @@
         var p = path.toString();
         this.callbacks[p] = this.callbacks[p] || [];
         this.callbacks[p].push(callback);
+        // this.callbacks[p].push(this.debounce(callback, DEBOUNCE_TIMEOUT));
     };
+
+    // ObservableContext.prototype.debounce = function(func, wait, immediate) {
+    //     var timeout;
+
+    //     return function() {
+    //         var context = this, args = arguments;
+
+    //         var later = function() {
+    //             timeout = null;
+    //             if (!immediate) func.apply(context, args);
+    //         };
+    //         var callNow = immediate && !timeout;
+    //         clearTimeout(timeout);
+    //         timeout = setTimeout(later, wait);
+    //         if (callNow) func.apply(context, args);
+    //     };
+    // };
 
     var Tower = function() {
         this.observables = new WeakMap();
