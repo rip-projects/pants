@@ -21,6 +21,6 @@
   ],
   "private": true,
   "dependencies": {
-    "platform": "~1.2.0"
+    "platform": "Polymer/platform#^0.4.0"
   }
 }

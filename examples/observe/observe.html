@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Examples: Observe</title>
+</head>
+<body>
+
+    <table>
+        <tr>
+            <td>Username</td>
+            <td class="username"></td>
+        </tr>
+        <tr>
+            <td>Skills</td>
+            <td class="skills"></td>
+        </tr>
+        <tr>
+            <td>Power</td>
+            <td class="stats-power"></td>
+        </tr>
+    </table>
+
+    <script type="text/javascript" src="../../lib/weakmap.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.js"></script>
+    <script type="text/javascript" src="../../js/observe.js"></script>
+    <script type="text/javascript">
+        (function() {
+            "use strict";
+
+            window.data = {
+                user: {
+                    username: 'putra',
+                    stats: {
+                        power: 100
+                    }
+                }
+            };
+
+            var observer;
+
+            observer = new pants.observe.Observer(data, 'user.username');
+            observer.on('change', function(a) {
+                console.log('username changed');
+                var value = Path.get('user.username').getValueFrom(data) || '';
+                document.querySelector('.username').innerHTML = value;
+            });
+
+            observer = pants.observe(data, 'user.stats.power');
+            observer.on('change', function(a) {
+                console.log('power changed');
+                var value = Path.get('user.stats.power').getValueFrom(data) || '';
+                document.querySelector('.stats-power').innerHTML = value;
+            });
+
+            observer = pants.observe(data, 'user.skills');
+            observer.on('change', function(a) {
+                console.log('skills changed');
+                var value = Path.get('user.skills').getValueFrom(data) || '';
+                document.querySelector('.skills').innerHTML = value;
+            });
+
+            data.user = {
+                username: 'ganesha',
+                stats: {
+                    power: 90
+                },
+                skills: [
+                    "memanah"
+                ]
+            };
+        })();
+    </script>
+</body>
+</html>

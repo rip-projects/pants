@@ -134,8 +134,10 @@
             });
 
             var fragment = pants.template(this.template, this);
-            this.innerHTML = '';
-            this.appendChild(fragment);
+            if (fragment) {
+                this.innerHTML = '';
+                this.appendChild(fragment);
+            }
 
             if (o.onCreated) {
                 o.onCreated.apply(this, arguments);

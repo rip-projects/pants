@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Examples: Template</title>
+
+    <script type="text/javascript" src="../../lib/mustache.js"></script>
+    <script type="text/javascript" src="../../js/template.js"></script>
+</head>
+<body>
+
+    <div name="Ganesha" age="10">
+        <template>
+            <table>
+                <tr>
+                    <td>Name</td>
+                    <td>{{ name }}</td>
+                </tr>
+                <tr>
+                    <td>Age</td>
+                    <td>{{ age }}</td>
+                </tr>
+            </table>
+            <br>
+            Your skills are:
+            <ul>
+                <template each="{{ skills }}">
+                    <li>{{ _ }}</li>
+                </template>
+            </ul>
+        </template>
+    </div>
+
+    <script type="text/javascript">
+        template = pants.template(document.querySelector('template'));
+        div = document.querySelector('div');
+
+        // Object.defineProperty(div, 'name', {
+        //     get: function() {
+        //         return this.getAttribute('name');
+        //     },
+        //     set: function(value) {
+        //         var oldValue = this.getAttribute('name');
+        //         if (oldValue !== value) {
+        //             this.setAttribute('name', value);
+
+        //             Object.getNotifier(this).notify({
+        //                 type: 'update',
+        //                 name: 'name',
+        //                 oldValue: oldValue
+        //             });
+        //         }
+        //     }
+        // });
+
+        // div.appendChild(template);
+    </script>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            div.name = "Arjuna";
+            div.age = 3000;
+            div.skills = ["memanah", "memanjat pohon"];
+            template.render(div);
+        });
+    </script>
+</body>
+</html>
