@@ -12,202 +12,164 @@
 } (this, function() {
     "use strict";
 
-/******************************************************************************
- * namespace pants.observe
- ******************************************************************************/
-
-    var DEBOUNCE_TIMEOUT = 50;
-
-    var observe = function(context, path) {
-        return new Observer(context, path);
+    var observe = function(context, path, callback) {
+        return new CallbackContext(context, path, callback);
     };
 
-    var ObservableContext = observe.ObservableContext = function(tower, context) {
-        this.tower = tower;
+    /**
+     * observe.Observable
+     *
+     * @param {object} context
+     */
+    var Observable = observe.Observable = function(context) {
         this.context = context;
-        this.callbacks = {};
+        this.callbackContexts = [];
+        this.isOpened = false;
 
+        this.callback__ = this.callback_.bind(this);
+    };
+
+    Observable.prototype.open = function() {
+        if (this.isOpened) {
+            return;
+        }
+
+        this.isOpened = true;
+
+        if (Array.observe) {
+            Array.observe(this.context, this.callback__);
+        } else {
+            Object.observe(this.context, this.callback__);
+        }
+
+        Observable.map.set(this.context, this);
+    };
+
+    Observable.prototype.close = function() {
+        if (!this.isOpened) {
+            return;
+        }
+
+        Observable.map.delete(this.context, this);
+
+        if (Array.observe) {
+            Array.unobserve(this.context, this.callback__);
+        } else {
+            Object.unobserve(this.context, this.callback__);
+        }
+
+        this.isOpened = false;
+
+    };
+
+    Observable.prototype.add = function(callbackContext) {
+        this.callbackContexts.push(callbackContext);
+    };
+
+    // Observable.prototype.remove = function(callbackContext) {
+    // };
+
+    Observable.prototype.find = function(name) {
+        var result = [];
+        this.callbackContexts.forEach(function(callbackContext) {
+            var path = Path.get(callbackContext.path);
+            if (path[0] === name) {
+                result.push(callbackContext);
+            }
+        });
+        return result;
+    };
+
+    Observable.prototype.callback_ = function(changes) {
         var that = this;
-        this.objectCallback__ = function() {
-            that.callback_.apply(that, arguments);
-        };
-        this.arrayCallback__ = function() {
-            that.callback_.apply(that, arguments);
-        };
-    };
 
-    ObservableContext.prototype.open = function() {
-        if (Array.observe) {
-            Array.observe(this.context, this.arrayCallback__);
-        } else {
-            Object.observe(this.context, this.objectCallback__);
-        }
-    };
-
-    ObservableContext.prototype.close = function() {
-        if (Array.observe) {
-            Array.unobserve(this.context, this.arrayCallback__);
-        } else {
-            Object.unobserve(this.context, this.objectCallback__);
-        }
-    };
-
-    ObservableContext.prototype.callback_ = function(changes) {
-        var context = this.context,
-            tower = this.tower,
-            callbacks = this.callbacks;
 
         changes.forEach(function(change) {
-            Object.keys(callbacks).forEach(function(path) {
-                var pathO = Path.get(path);
+            var callbackContexts = that.find(change.name);
 
-                if (change.type === 'splice') {
+            callbackContexts.forEach(function(callbackContext) {
+                try {
+                    var path = Path.get(callbackContext.path);
+
+                    if (change.oldValue && Observable.exists(change.oldValue)) {
+                        Observable.remove(change.oldValue);
+                    }
+                } catch(e) {
+                    console.error(e);
+                }
+            });
+
+            callbackContexts.forEach(function(callbackContext) {
+                var path = Path.get(callbackContext.path);
+                if (path.length === 0) {
+                    callbackContext.callback(change);
+                } else if (path.length === 1) {
                     try {
-                        console.log(callbacks);
-                        callbacks[''].forEach(function(callback) {
-                            callback(change);
-                        });
-                    } catch(e) {
-                        console.log(e);
-                    }
-                } else if (change.name === path) {
-                    callbacks[path].forEach(function(callback) {
-                        callback(change);
-                    });
-                } else {
-                    if (path.indexOf(change.name + '.') === 0) {
-                        try {
-
-                            tower.removeObservableContext(change.oldValue);
-
-                            var subPath = path.substr(change.name.length + 1);
-                            var subPathO = Path.get(subPath);
-                            var subContext = context[change.name] || {};
-
-                            var subObservable = tower.getObservableContext(subContext);
-
-                            var arrContext = subPathO.getValueFrom(subContext),
-                                arrObservable;
-
-                            if (arrContext instanceof Array) {
-                                arrObservable = tower.getObservableContext(arrContext);
-                            }
-
-                            callbacks[path].forEach(function(callback) {
-                                subObservable.observe(subPath, callback);
-
-                                if (arrObservable) {
-                                    arrObservable.observe(callback);
-                                }
-                            });
-
-                            Object.getNotifier(subContext).notify({
-                                type: 'add',
-                                name: subPathO[0]
-                            });
-
-                        } catch(e) {
-                            console.error(e);
-                            // console.error(e.stack);
+                        var arrContext = path.getValueFrom(that.context);
+                        if (arrContext instanceof Array) {
+                            observe(arrContext, '', callbackContext.callback);
                         }
+                    } catch(e) {
+                        console.error(e);
                     }
+
+                    callbackContext.callback(change);
+                } else if (path.length > 1) {
+
+                    var subPath = Path.get(path.slice(1)),
+                        subContext = that.context[change.name] || {};
+
+                    observe(subContext, subPath.toString(), callbackContext.callback);
+
+                    Object.getNotifier(subContext).notify({
+                        type: 'add',
+                        object: subContext,
+                        name: subPath[0]
+                    });
                 }
             });
         });
     };
 
-    ObservableContext.prototype.observe = function(path, callback) {
-        if (arguments.length === 1) {
-            callback = path;
-            path = '';
-        }
+    Observable.map = new WeakMap();
 
-        var p = path.toString();
-        this.callbacks[p] = this.callbacks[p] || [];
-        this.callbacks[p].push(callback);
-        // this.callbacks[p].push(this.debounce(callback, DEBOUNCE_TIMEOUT));
-    };
-
-    // ObservableContext.prototype.debounce = function(func, wait, immediate) {
-    //     var timeout;
-
-    //     return function() {
-    //         var context = this, args = arguments;
-
-    //         var later = function() {
-    //             timeout = null;
-    //             if (!immediate) func.apply(context, args);
-    //         };
-    //         var callNow = immediate && !timeout;
-    //         clearTimeout(timeout);
-    //         timeout = setTimeout(later, wait);
-    //         if (callNow) func.apply(context, args);
-    //     };
-    // };
-
-    var Tower = function() {
-        this.observables = new WeakMap();
-    };
-
-    Tower.prototype.getObservableContext = function(context) {
-        if (!this.observables.has(context)) {
-            var observable = new ObservableContext(this, context);
-            this.observables.set(context, observable);
+    Observable.get = function(context) {
+        var observable = Observable.map.get(context);
+        if (!observable) {
+            observable = new Observable(context);
             observable.open();
         }
-        return this.observables.get(context);
+
+        return observable;
     };
 
-    Tower.prototype.removeObservableContext = function(context) {
-        if (context && this.observables.has(context)) {
-            var observable = this.observables.get(context);
+    Observable.exists = function(context) {
+        return Observable.map.has(context);
+    };
+
+    Observable.remove = function(context) {
+        console.log(context);
+        if (Observable.exists(context)) {
+            var observable = Observable.get(context);
+            console.log(observable);
             observable.close();
-            this.observables.delete(context);
         }
     };
 
-    Tower.prototype.observe = function(context, path, callback) {
-        var observable = this.getObservableContext(context);
+    /**
+     * observe.CallbackContext
+     *
+     * @param {object}   context
+     * @param {string}   path
+     * @param {Function} callback
+     */
+    var CallbackContext = function(context, path, callback) {
+        this.observable = Observable.get(context);
+        this.path = path;
+        this.callback = callback;
 
-        observable.observe(path, callback);
-    };
-
-    var tower = observe.tower = new Tower();
-
-    var Observer = observe.Observer = function(context, path) {
-        this.listeners = {};
-
-        this.context = context;
-        this.path = Path.get(path);
-
-        this.start();
-    };
-
-    Observer.prototype.on = function(key, callback) {
-        this.listeners[key] = this.listeners[key] || [];
-        this.listeners[key].push(callback);
-    };
-
-    Observer.prototype.emit = function(key) {
-        var listeners = this.listeners[key] || [],
-            that = this,
-            args = Array.prototype.slice.call(arguments, 1);
-
-        listeners.forEach(function(listener) {
-            listener.apply(that, args);
-        });
-    };
-
-    Observer.prototype.start = function() {
-        var that = this;
-        tower.observe(this.context, this.path, function(change) {
-            that.emit('change', change);
-        });
+        this.observable.add(this);
     };
 
     return observe;
-
-
 }));
-
-

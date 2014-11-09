@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>Examples: Template</title>
 
+    <!-- <script type="text/javascript" src="/firebug-lite/build/firebug-lite.js"></script> -->
+    <script type="text/javascript" src="../../lib/weakmap.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.js"></script>
+    <script type="text/javascript" src="../../js/observe.js"></script>
+
     <script type="text/javascript" src="../../lib/mustache.js"></script>
     <script type="text/javascript" src="../../js/template.js"></script>
 </head>
@@ -12,57 +18,105 @@
     <div name="Ganesha" age="10">
         <template>
             <table>
-                <tr>
+                <tr data-field-value="{{ name }}">
                     <td>Name</td>
                     <td>{{ name }}</td>
+                </tr>
+                <tr>
+                    <td>Age1</td>
+                    <td>{{ age }}</td>
                 </tr>
                 <tr>
                     <td>Age</td>
                     <td>{{ age }}</td>
                 </tr>
             </table>
+
             <br>
             Your skills are:
             <ul>
                 <template each="{{ skills }}">
-                    <li>{{ _ }}</li>
+                    <li>{{ }}</li>
                 </template>
             </ul>
         </template>
     </div>
 
     <script type="text/javascript">
-        template = pants.template(document.querySelector('template'));
-        div = document.querySelector('div');
+        (function() {
+            "use strict";
 
-        // Object.defineProperty(div, 'name', {
-        //     get: function() {
-        //         return this.getAttribute('name');
-        //     },
-        //     set: function(value) {
-        //         var oldValue = this.getAttribute('name');
-        //         if (oldValue !== value) {
-        //             this.setAttribute('name', value);
+            window.template = pants.template(document.querySelector('template'));
+            window.div = {};
 
-        //             Object.getNotifier(this).notify({
-        //                 type: 'update',
-        //                 name: 'name',
-        //                 oldValue: oldValue
-        //             });
-        //         }
-        //     }
-        // });
+            var divs = [
+                {
+                    name: 'Yudhistira',
+                    age: 30,
+                    skills: [
+                        'bijaksana',
+                        'adil'
+                    ]
+                },
+                {
+                    name: 'Bima',
+                    age: 28,
+                    skills: [
+                        'kuat',
+                        'jujur'
+                    ]
+                },
+                {
+                    name: 'Arjuna',
+                    age: 25,
+                    skills: [
+                        'memanah',
+                        'tampan'
+                    ]
+                },
+                {
+                    name: 'Nakula',
+                    age: 20,
+                    skills: [
+                        'pedang'
+                    ]
+                },
+                {
+                    name: 'Sadewa',
+                    age: 20,
+                    skills: [
+                        'sangkur'
+                    ]
+                }
 
-        // div.appendChild(template);
-    </script>
+            ];
 
-    <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', function() {
-            div.name = "Arjuna";
-            div.age = 3000;
-            div.skills = ["memanah", "memanjat pohon"];
-            template.render(div);
-        });
+            document.addEventListener('DOMContentLoaded', function() {
+                for(var i in divs[0]) {
+                    div[i] = divs[0][i];
+                }
+
+                var x = 0;
+                setTimeout(function() {
+                    x++;
+                    x = x % 5;
+                    for(var i in divs[x]) {
+                        div[i] = divs[x][i];
+                    }
+                }, 2000);
+
+                // div.skills = [{
+                //     name: "memanah"
+                // }, {
+                //     name: "memanjat pohon"
+                // }];
+                template.bind(div);
+
+                // setTimeout(function() {
+                //     div.name = 'huer';
+                // }, 1000);
+            });
+        })();
     </script>
 </body>
 </html>

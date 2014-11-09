@@ -21,6 +21,8 @@
         </tr>
     </table>
 
+    <!-- <script type="text/javascript" src="/firebug-lite/build/firebug-lite.js#enableTrace,startOpened"></script> -->
+
     <script type="text/javascript" src="../../lib/weakmap.poly.js"></script>
     <script type="text/javascript" src="../../lib/observe.poly.js"></script>
     <script type="text/javascript" src="../../lib/observe.js"></script>
@@ -38,24 +40,19 @@
                 }
             };
 
-            var observer;
-
-            observer = new pants.observe.Observer(data, 'user.username');
-            observer.on('change', function(a) {
+            pants.observe(data, 'user.username', function(a) {
                 console.log('username changed');
                 var value = Path.get('user.username').getValueFrom(data) || '';
                 document.querySelector('.username').innerHTML = value;
             });
 
-            observer = pants.observe(data, 'user.stats.power');
-            observer.on('change', function(a) {
+            pants.observe(data, 'user.stats.power', function(a) {
                 console.log('power changed');
                 var value = Path.get('user.stats.power').getValueFrom(data) || '';
                 document.querySelector('.stats-power').innerHTML = value;
             });
 
-            observer = pants.observe(data, 'user.skills');
-            observer.on('change', function(a) {
+            pants.observe(data, 'user.skills', function(a) {
                 console.log('skills changed');
                 var value = Path.get('user.skills').getValueFrom(data) || '';
                 document.querySelector('.skills').innerHTML = value;
