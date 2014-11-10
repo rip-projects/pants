@@ -17,19 +17,33 @@
     };
 
     /**
-     * observe.Observable
+     * observe.CallbackContext
      *
-     * @param {object} context
+     * @param {object}   context
+     * @param {string}   path
+     * @param {Function} callback
      */
-    var Observable = observe.Observable = function(context) {
+    var CallbackContext = observe.CallbackContext = function(context, path, callback) {
         this.context = context;
-        this.callbackContexts = [];
-        this.isOpened = false;
+        this.path = path;
+        this.callback = callback;
 
         this.callback__ = this.callback_.bind(this);
+        this.children = [];
+
+        this.open();
+
+        var pathO = Path.get(path);
+        if (pathO.length > 0) {
+            Object.getNotifier(context).notify({
+                type: 'add',
+                object: context,
+                name: pathO[0]
+            });
+        }
     };
 
-    Observable.prototype.open = function() {
+    CallbackContext.prototype.open = function() {
         if (this.isOpened) {
             return;
         }
@@ -42,15 +56,26 @@
             Object.observe(this.context, this.callback__);
         }
 
-        Observable.map.set(this.context, this);
+        CallbackContext.entries.push(this);
     };
 
-    Observable.prototype.close = function() {
+    CallbackContext.prototype.close = function() {
         if (!this.isOpened) {
             return;
         }
 
-        Observable.map.delete(this.context, this);
+        var that = this;
+
+        this.children.forEach(function(child) {
+            child.close();
+        });
+
+        CallbackContext.entries.some(function(entry, index) {
+            if (that === entry) {
+                CallbackContext.entries.splice(index, 1);
+                return true;
+            }
+        });
 
         if (Array.observe) {
             Array.unobserve(this.context, this.callback__);
@@ -62,114 +87,71 @@
 
     };
 
-    Observable.prototype.add = function(callbackContext) {
-        this.callbackContexts.push(callbackContext);
-    };
+    CallbackContext.prototype.callback_ = function(changes) {
+        var that = this,
+            names = {};
 
-    // Observable.prototype.remove = function(callbackContext) {
-    // };
-
-    Observable.prototype.find = function(name) {
-        var result = [];
-        this.callbackContexts.forEach(function(callbackContext) {
-            var path = Path.get(callbackContext.path);
-            if (path[0] === name) {
-                result.push(callbackContext);
-            }
-        });
-        return result;
-    };
-
-    Observable.prototype.callback_ = function(changes) {
-        var that = this;
-
+        var path = Path.get(that.path);
 
         changes.forEach(function(change) {
-            var callbackContexts = that.find(change.name);
+            var indexName = change.name || '';
 
-            callbackContexts.forEach(function(callbackContext) {
+            if (names[indexName]) {
+                return;
+            }
+
+            if (path.length > 0 && path.indexOf(change.name) === -1) {
+                return;
+            }
+
+            names[indexName] = indexName;
+
+            if (path.length === 0) {
+                that.callback(changes);
+            } else if (path[path.length - 1] === change.name) {
+                // console.log(that.children.length, that.children);
+
+                if (change.oldValue instanceof Array) {
+                    that.children.some(function(child) {
+                        if (child.context === change.oldValue && child.path === '') {
+                            child.close();
+                            return true;
+                        }
+                    });
+                }
+
                 try {
-                    var path = Path.get(callbackContext.path);
-
-                    if (change.oldValue && Observable.exists(change.oldValue)) {
-                        Observable.remove(change.oldValue);
+                    var arrContext = that.context[change.name];
+                    if (arrContext instanceof Array) {
+                        that.children.push(observe(arrContext, '', that.callback));
                     }
                 } catch(e) {
                     console.error(e);
                 }
-            });
 
-            callbackContexts.forEach(function(callbackContext) {
-                var path = Path.get(callbackContext.path);
-                if (path.length === 0) {
-                    callbackContext.callback(change);
-                } else if (path.length === 1) {
-                    try {
-                        var arrContext = path.getValueFrom(that.context);
-                        if (arrContext instanceof Array) {
-                            observe(arrContext, '', callbackContext.callback);
-                        }
-                    } catch(e) {
-                        console.error(e);
-                    }
+                that.callback(changes);
+            } else {
+                var subPath = Path.get(path.slice(1)),
+                    subContext = that.context[path[0]] || {};
 
-                    callbackContext.callback(change);
-                } else if (path.length > 1) {
+                that.children.forEach(function(child) {
+                    child.close();
+                });
 
-                    var subPath = Path.get(path.slice(1)),
-                        subContext = that.context[change.name] || {};
 
-                    observe(subContext, subPath.toString(), callbackContext.callback);
+                that.children.push(observe(subContext, subPath.toString(), that.callback));
 
-                    Object.getNotifier(subContext).notify({
-                        type: 'add',
-                        object: subContext,
-                        name: subPath[0]
-                    });
-                }
-            });
+                Object.getNotifier(subContext).notify({
+                    type: 'add',
+                    object: subContext[subPath[0]],
+                    name: subPath[0]
+                });
+            }
+
         });
     };
 
-    Observable.map = new WeakMap();
-
-    Observable.get = function(context) {
-        var observable = Observable.map.get(context);
-        if (!observable) {
-            observable = new Observable(context);
-            observable.open();
-        }
-
-        return observable;
-    };
-
-    Observable.exists = function(context) {
-        return Observable.map.has(context);
-    };
-
-    Observable.remove = function(context) {
-        console.log(context);
-        if (Observable.exists(context)) {
-            var observable = Observable.get(context);
-            console.log(observable);
-            observable.close();
-        }
-    };
-
-    /**
-     * observe.CallbackContext
-     *
-     * @param {object}   context
-     * @param {string}   path
-     * @param {Function} callback
-     */
-    var CallbackContext = function(context, path, callback) {
-        this.observable = Observable.get(context);
-        this.path = path;
-        this.callback = callback;
-
-        this.observable.add(this);
-    };
+    CallbackContext.entries = [];
 
     return observe;
 }));

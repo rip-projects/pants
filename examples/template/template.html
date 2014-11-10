@@ -35,7 +35,7 @@
             <br>
             Your skills are:
             <ul>
-                <template each="{{ skills }}">
+                <template if="{{ something }}">
                     <li>{{ }}</li>
                 </template>
             </ul>
@@ -103,7 +103,7 @@
                     for(var i in divs[x]) {
                         div[i] = divs[x][i];
                     }
-                }, 2000);
+                }, 1000);
 
                 // div.skills = [{
                 //     name: "memanah"

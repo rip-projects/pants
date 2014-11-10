@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Examples: Template</title>
+
+    <!-- <script type="text/javascript" src="/firebug-lite/build/firebug-lite.js"></script> -->
+    <script type="text/javascript" src="../../lib/weakmap.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.js"></script>
+    <script type="text/javascript" src="../../js/observe.js"></script>
+
+    <script type="text/javascript" src="../../lib/mustache.js"></script>
+    <script type="text/javascript" src="../../js/template.js"></script>
+</head>
+<body>
+
+    <div>
+        <template>
+            <div class="shadow-container">
+                <template bind="{{ user }}" shadow>
+                    <div>{{ username }}</div>
+                    <div>{{ first_name }} {{ last_name }}</div>
+                </template>
+            </div>
+            <div>
+                <template>
+                    <div>{{ user.username }}</div>
+                    <div>{{ user.first_name }} {{ user.last_name }}</div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <script type="text/javascript">
+        (function() {
+            "use strict";
+
+            window.template = pants.template(document.querySelector('template'));
+            window.data = {
+                user: {
+                    username: "dwan",
+                    first_name: 'Dhuhana',
+                    last_name: 'Nugie'
+                }
+            };
+
+            template.bind(data);
+        })();
+    </script>
+</body>
+</html>

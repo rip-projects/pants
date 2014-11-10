@@ -20,8 +20,18 @@
 
             t.wearPants_ = true;
 
-            if (t.hasAttribute('each')) {
-                t.isRepeated_ = true;
+            t.each_ = t.getAttribute('each');
+            t.bind_ = t.getAttribute('bind');
+            t.if_ = t.getAttribute('if');
+            switch (t.getAttribute('shadow')) {
+                case '':
+                case '1':
+                case 'yes':
+                case 'true':
+                    t.shadow_ = t.parentNode;
+                    break;
+                default:
+                    t.shadow_ = null;
             }
 
             t.instances = [];
@@ -30,7 +40,7 @@
                 var fragment = this.content.cloneNode(true),
                     firstNode, lastNode, instance;
 
-                instance = new Instance(fragment, context);
+                instance = new Instance(this, fragment, context);
 
                 firstNode = fragment.firstChild;
                 if (firstNode) {
@@ -51,7 +61,18 @@
 
             t.insert = function(instance) {
                 this.instances.push(instance);
-                this.parentNode.appendChild(instance.fragment);
+                if (t.shadow_) {
+                    t.getShadowRoot().appendChild(instance.fragment);
+                } else {
+                    this.parentNode.appendChild(instance.fragment);
+                }
+            };
+
+            t.getShadowRoot = function() {
+                if (!t.shadowRoot_) {
+                    t.shadowRoot_ = t.shadow_.createShadowRoot();
+                }
+                return t.shadowRoot_;
             };
 
             t.bind = function(context, observePath)
@@ -59,25 +80,79 @@
                 var observedContext,
                     that = this;
 
-                this.observePath_ = observePath;
+                if (that.if_) {
+                    Expression.extract(that.if_).forEach(function(key) {
+                        pants.observe(context, key, function(changes) {
+                            var exp = (that.each_) ? that.each_ : that.bind_;
+                            Expression.extract(exp).forEach(function(k) {
+                                Object.getNotifier(context).notify({
+                                    type: 'update',
+                                    object: context,
+                                    name: k,
+                                    oldValue: context[k]
+                                });
+                            });
+
+                        });
+                    });
+                }
 
                 if (observePath) {
-                    observedContext = Path.get(observePath).getValueFrom(context);
-
-                    pants.observe(context, observePath, function(change) {
-                        if (that.isRepeated_) {
+                    pants.observe(context, observePath, function(changes) {
+                        try {
                             that.instances.forEach(function(instance) {
-                                console.log(instance);
+                                var children = [];
+                                for(var c = instance.lastNode; c && c !== instance.firstNode; c = c.previousSibling) {
+                                    if (c) {
+                                        children.push(c);
+                                    }
+                                }
+                                children.push(instance.firstNode);
+
+
+                                for(var i in children) {
+                                    try {
+                                        that.parentNode.removeChild(children[i]);
+                                    } catch(e) {
+
+                                    }
+                                }
                             });
-                            if (observedContext.forEach) {
-                                observedContext.forEach(function(eachContext) {
-                                    that.insert(that.create(eachContext, observePath));
+                        } catch(e) {
+                            console.error(e);
+                        }
+
+                        var tobeRendered = false;
+                        if (that.if_) {
+                            try {
+                                Expression.extract(that.if_).forEach(function(key) {
+                                    if (context[key]) {
+                                        tobeRendered = true;
+                                    }
                                 });
+                            } catch(e) {
+                                console.error(e);
+                            }
+                        } else {
+                            tobeRendered = true;
+                        }
+
+                        if (tobeRendered) {
+                            if (that.each_) {
+                                observedContext = Path.get(observePath).getValueFrom(context);
+                                if (observedContext.forEach) {
+                                    observedContext.forEach(function(eachContext) {
+                                        that.insert(that.create(eachContext));
+                                    });
+                                }
+                            } else {
+                                observedContext = Path.get(observePath).getValueFrom(context);
+                                that.insert(that.create(observedContext));
                             }
                         }
                     });
                 } else {
-                    this.insert(this.create(context, observePath));
+                    this.insert(this.create(context));
                 }
 
             };
@@ -137,52 +212,33 @@
 
     };
 
-    var Instance = template.Instance = function(fragment, context) {
+    var Instance = template.Instance = function(template, fragment, context) {
+        this.template = template;
         this.context = context;
         this.fragment = fragment;
     };
 
     Instance.prototype.bind = function(node) {
+
         var context = this.context;
+
         if (node instanceof HTMLTemplateElement) {
             var templateNode = template(node);
 
             var templateContext = context;
 
-            if (templateNode.hasAttribute('each')) {
-
-                Expression.extract(templateNode.getAttribute('each')).forEach(function(key) {
+            if (templateNode.each_) {
+                Expression.extract(templateNode.each_).forEach(function(key) {
                     templateNode.bind(context, key);
                 });
+            } else if (templateNode.bind_) {
+                Expression.extract(templateNode.bind_).forEach(function(key) {
+                    templateNode.bind(context, key);
+                });
+            } else {
+                console.log(templateNode);
+                templateNode.insert(templateNode.create(templateContext));
             }
-            // if (node.hasAttribute('shadow')) {
-            //     newNode = document.createElement('div');
-            //     newNode.setAttribute('shadow', node.getAttribute('shadow'));
-            //     fragment = pants.template(node, context);
-
-            //     newNode.shadow = newNode.createShadowRoot();
-            //     newNode.shadow.appendChild(fragment);
-
-            //     return newNode;
-            // } else if (node.hasAttribute('if')) {
-            //     var cond = node.getAttribute('if');
-            //     cond = Mustache.render(cond, context);
-            //     // if not satisfied
-            //     if (cond === '') {
-            //         return null;
-            //         // var tmpNode = node;
-            //         // node = node.previousSibling;
-            //         // node.removeChild(tmpNode);
-            //     } else {
-            //         return pants.template(node, context);
-            //         // node.replaceChild(fragment, node);
-            //         // node = fragment.childNodes[0];
-            //         // parseNode(fragment, context);
-            //     }
-            // } else {
-            //     throw new Error('Unimplemented yet!');
-            // }
-
             return;
         }
 

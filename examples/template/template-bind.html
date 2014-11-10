@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Examples: Template</title>
+
+    <!-- <script type="text/javascript" src="/firebug-lite/build/firebug-lite.js"></script> -->
+    <script type="text/javascript" src="../../lib/weakmap.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.poly.js"></script>
+    <script type="text/javascript" src="../../lib/observe.js"></script>
+    <script type="text/javascript" src="../../js/observe.js"></script>
+
+    <script type="text/javascript" src="../../lib/mustache.js"></script>
+    <script type="text/javascript" src="../../js/template.js"></script>
+</head>
+<body>
+
+    <template>
+        <template bind="{{ user }}">
+            <div>{{ username }}</div>
+            <div>{{ first_name }} {{ last_name }}</div>
+        </template>
+    </template>
+
+    <script type="text/javascript">
+        (function() {
+            "use strict";
+
+            window.template = pants.template(document.querySelector('template'));
+            window.data = {
+                user: {
+                    username: "dwan",
+                    first_name: 'Dhuhana',
+                    last_name: 'Nugie'
+                }
+            };
+
+            template.bind(data);
+        })();
+    </script>
+</body>
+</html>

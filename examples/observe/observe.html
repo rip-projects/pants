@@ -40,20 +40,20 @@
                 }
             };
 
-            pants.observe(data, 'user.username', function(a) {
-                console.log('username changed');
+            pants.observe(data, 'user.username', function() {
+                console.info('username changed');
                 var value = Path.get('user.username').getValueFrom(data) || '';
                 document.querySelector('.username').innerHTML = value;
             });
 
-            pants.observe(data, 'user.stats.power', function(a) {
-                console.log('power changed');
+            pants.observe(data, 'user.stats.power', function() {
+                console.info('power changed');
                 var value = Path.get('user.stats.power').getValueFrom(data) || '';
                 document.querySelector('.stats-power').innerHTML = value;
             });
 
-            pants.observe(data, 'user.skills', function(a) {
-                console.log('skills changed');
+            pants.observe(data, 'user.skills', function() {
+                console.info('skills changed');
                 var value = Path.get('user.skills').getValueFrom(data) || '';
                 document.querySelector('.skills').innerHTML = value;
             });
