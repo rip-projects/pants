@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pants: New Element</title>
+
+    <!-- polymer platform dependencies -->
+    <script type="text/javascript" src="../vendor/platform/platform.js"></script>
+
+    <!-- pants inner dependencies -->
+    <script type="text/javascript" src="../js/pants.js"></script>
+
+    <!-- pants-observe inner dependencies -->
+    <script type="text/javascript" src="../vendor/pants-observe/js/weakmap.poly.js"></script>
+    <script type="text/javascript" src="../vendor/pants-observe/js/observe.poly.js"></script>
+    <script type="text/javascript" src="../vendor/pants-observe/js/path.js"></script>
+    <script type="text/javascript" src="../vendor/pants-observe/js/observe.js"></script>
+
+    <!-- pants-node inner dependencies -->
+    <!-- <script type="text/javascript" src="../js/node.js"></script> -->
+
+    <!-- pants-template inner dependencies -->
+    <script type="text/javascript" src="../vendor/pants-template/lib/mustache.js"></script>
+    <script type="text/javascript" src="../vendor/pants-template/js/expression.js"></script>
+    <script type="text/javascript" src="../vendor/pants-template/js/node.js"></script>
+    <script type="text/javascript" src="../vendor/pants-template/js/template.js"></script>
+</head>
+<body>
+    <!-- how to create new element -->
+    <pants-element name="say-hello">
+        <template shadow>
+            <input type="text" value="{{name}}">
+            <div>
+                Hello <a href="#" on-click="{{go}}">{{ name }}</a>!
+            </div>
+            <div>
+                My age {{ age }}
+            </div>
+
+            <div><a href="#" id="poke">Poke me!</a></div>
+        </template>
+
+        <script type="text/javascript">
+        (function(root) {
+            pants({
+                name: 'Ganesha',    // default value of name
+                age: 10,            // default value of age
+                go: function(evt) {
+                    evt.preventDefault();
+                    console.log('go to name', this, evt.target);
+                }
+            }).on('created', function() {
+                console.log('created event triggered', arguments);
+            }).on('attached', function() {
+                console.log('attached event triggered', arguments);
+            }).on('detached', function() {
+                console.log('detached event triggered', arguments);
+            }).on('nameChanged', function() {
+                console.log('attribute(name) changed event triggered', arguments);
+            }).event('click ::shadow #poke', function(evt) {
+                evt.preventDefault();
+                console.log('poking out');
+                this.dispatchEvent(new CustomEvent('poke'));
+            })
+            .register();
+        })(this);
+        </script>
+    </pants-element>
+
+    <!-- how to use custom element -->
+    <say-hello name="Farid">
+    </say-hello>
+
+    <script type="text/javascript">
+    (function(root) {
+        "use strict";
+
+        document.querySelector('say-hello').addEventListener('poke', function(evt) {
+            console.log('poked', evt);
+        });
+    })(this);
+    </script>
+</body>
+</html>

@@ -1,199 +1,297 @@
-(function(global) {
+/**
+ * pants
+ *
+ * MIT LICENSE
+ *
+ * Copyright (c) 2014 PT Sagara Xinix Solusitama - Xinix Technology
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author     Ganesha <reekoheek@gmail.com>
+ * @copyright  2014 PT Sagara Xinix Solusitama
+ */
+(function(root, factory) {
     "use strict";
 
-    String.prototype.camelize = function (forPropertyName) {
-        return this.replace (/(?:^|[-])(\w)/g, function (_, c, i) {
-            if (forPropertyName) {
-                return c ? (i === 0 ? c.toLowerCase() : c.toUpperCase()) : '';
-            } else {
-                return c ? c.toUpperCase() : '';
-            }
+    if( typeof define === 'function' && define.amd ){
+        define([], factory );
+    }else if( typeof exports === 'object' ){
+        module.exports = factory();
+    }else{
+        root.pants = factory();
+    }
+} (this, function() {
+    "use strict";
+
+    var matches = function(el, selector) {
+        return (el.matches || el.matchesSelector || el.msMatchesSelector || el.mozMatchesSelector || el.webkitMatchesSelector || el.oMatchesSelector).call(el, selector);
+    };
+
+    var pants = function(componentName, defaultAttributes) {
+        switch(arguments.length) {
+            case 1:
+                if (typeof componentName === 'object') {
+                    defaultAttributes = componentName;
+                    componentName = null;
+                }
+                break;
+        }
+
+        var scope = document.currentScript.ownerDocument;
+
+        if (!componentName) {
+            var node = document.currentScript;
+            do {
+                node = node.parentNode;
+                if (node && node.tagName === 'PANTS-ELEMENT') {
+                    componentName = node.getAttribute('name');
+                    scope = node;
+                    break;
+                }
+            } while (node);
+        }
+
+        if (!componentName) {
+            throw "Element does not have name!";
+        }
+
+        return new Pants(componentName, scope, defaultAttributes);
+    };
+
+    var Pants = pants.Pants = function(componentName, scope, defaultAttributes) {
+        this.componentName = componentName;
+        this.defaultAttributes = defaultAttributes || {};
+        this.attributeNames = Object.keys(this.defaultAttributes);
+        this.scope = scope;
+        this.template = scope.querySelector('template') || document.createElement('template');
+        this.listeners = {};
+        this.events = {};
+
+        this.parsers = {
+            'application/json': JSON.parse
+        };
+    };
+
+    Pants.prototype.on = function(eventName, eventCallback) {
+        this.listeners[eventName] = this.listeners[eventName] || [];
+        this.listeners[eventName].push(eventCallback);
+
+        return this;
+    };
+
+    Pants.prototype.emit = function(eventName) {
+        var component = arguments[arguments.length - 1],
+            args = Array.prototype.slice.call(arguments, 1, -1),
+            listeners = this.listeners[eventName] || [];
+
+        listeners.forEach(function(listener) {
+            listener.apply(component, args);
         });
     };
 
-    var pants = global.pants = global.pants || {};
+    Pants.prototype.event = function(eventName, eventCallback) {
+        this.events[eventName] = this.events[eventName] || [];
+        this.events[eventName].push(eventCallback);
 
-    var uniqueId = 0;
+        return this;
+    };
 
-    var createPants = function(tagName, o) {
-        o = o || {};
-        o.prototype = HTMLElement.prototype;
+    Pants.prototype.parse = function(contentType, textContent) {
 
-        var proto = Object.create(o.prototype);
-        for (var key in o) {
-            proto[key] = o[key];
-        }
-
-        proto.doc = pants.getCurrentDocument();
-
-        if (!o.template) {
-            proto.template = proto.doc.mainTemplate;
-        } else if (o.template instanceof HTMLTemplateElement) {
-            proto.template = o.template;
-        } else {
-            proto.template = proto.doc.getNamedTemplate(o.template) || proto.doc.mainTemplate;
-        }
-
-        proto.listeners = {};
-
-        proto.emit = function(eventName) {
-            var segments = eventName.trim().split(':');
-            var names = [];
-            var args = Array.prototype.slice.call(arguments, 1);
-
-            var that = this;
-            segments.forEach(function(v, i) {
-                var s = [];
-                for(var j = 0; j <= i; j++) {
-                    s.push(segments[j]);
-                }
-                s = s.join(':');
-
-                if (that.listeners[s]) {
-                    that.listeners[s].forEach(function(fn) {
-                        fn.apply(null, args);
-                    });
-                }
-            });
-        };
-
-        proto.on = function(eventName, fn) {
-            this.listeners[eventName] = this.listeners[eventName] || [];
-            this.listeners[eventName].push(fn);
-        };
-
-
-        // proto.events = {};
-        proto.delegateEvent = function(eventName, target, method) {
-            var tagName = this.tagName.toLowerCase();
-            var nsEventName = eventName + '.delegated' + this.id;
-            var selector = target;
-
-            if (typeof target !== 'string') {
-                var clazz = eventName + '-' + tagName;
-                selector = '.' + clazz;
-
-                $(target).addClass(clazz);
+        // registering
+        if (typeof textContent === 'function') {
+            if (typeof contentType === 'string') {
+                contentType = [contentType];
             }
 
-            var that = this;
-            $(this).on(nsEventName, selector, function() {
-                var args = [];
-                for(var i in arguments) {
-                    args.push(arguments[i]);
+            for(var i in contentType) {
+                this.parsers[contentType[i]] = textContent;
+            }
+
+            return this;
+        } else {
+            return this.parsers[contentType].call(this, textContent);
+        }
+
+    };
+
+    Pants.prototype.register = function(prototype, ext) {
+        var that = this;
+
+        prototype = prototype || HTMLElement.prototype;
+
+        this.prototype = Object.create(prototype);
+        if (ext) {
+            this.extends = ext;
+        }
+
+        this.prototype.getContentType = function() {
+            return this.getAttribute('type') || 'application/json';
+        };
+
+        this.prototype.createdCallback = function() {
+            Object.keys(this.pants.defaultAttributes).forEach(function(key) {
+                var attr = this.pants.defaultAttributes[key];
+                if (typeof attr === 'function') {
+                    attr = attr.bind(this);
                 }
-                args.push(this);
-                that[method].apply(that, args);
+                this[key] = attr;
+            }.bind(this));
+
+            // populate attribute values for the first time
+            this.pants.attributeNames.forEach(function(attributeName) {
+                var value = this.getAttribute(attributeName);
+                if (value) {
+                    this[attributeName] = value;
+                }
+            }.bind(this));
+
+            var changeData = function(data) {
+                if (this._data === data) {
+                    return;
+                }
+
+                var notifier = Object.getNotifier(this);
+
+                this._data = data;
+
+                notifier.notify({
+                    type:'update',
+                    name: 'data'
+                });
+
+                notifier.notify({
+                    type:'update',
+                    name: 'textData'
+                });
+            }.bind(this);
+
+            Object.defineProperty(this, 'data', {
+                get: function() {
+                    return this._data;
+                },
+
+                set: function(data) {
+                    changeData(data);
+                }
             });
-        };
 
-        proto.undelegateEvent = function(eventName) {
-            $(this).off('.delegated' + this.id);
-        };
+            Object.defineProperty(this, 'textData', {
+                get: function() {
+                    return JSON.stringify(this.data, null, 4);
+                },
 
-        // define lifecycle created callback
-        proto.createdCallback = function() {
-            this.id = uniqueId++;
-            // this.normalizedAttributes = {};
-            this.originalTextContent = this.textContent;
-
-            var that = this;
-            Array.prototype.forEach.call(this.attributes, function(attribute) {
-                if (attribute.name.substr(-4) === '-ref') {
-                    var propName = attribute.name.substr(0, attribute.name.length - 4).camelize(true);
-
-                    var ref = document.getElementById(attribute.value);
+                set: function(textData) {
                     try {
-                        switch (ref.type) {
-                            case 'application/json':
-                            case 'text/json':
-                                that[propName] = JSON.parse(ref.textContent);
-                                break;
-                            default:
-                                throw new Error('No parser for type [' + ref.type + ']');
-                                // eval('that[propName] = ' + ref.textContent);
-                        }
+                        var data = this.pants.parse(this.getContentType(), textData);
+                        changeData(data);
                     } catch(e) {
-                        throw new Error('Parse error of [' + attribute.name + '] attribute. "' + e.message + '"', e);
+
                     }
                 }
             });
 
-            if (o.events) {
-                for(var k in o.events) {
-                    var methodName = o.events[k];
-                    var matches = k.match(/^(\w+)\s*(.*)$/);
-                    var eventName = matches[1];
-                    var selector = matches[2];
-                    this.delegateEvent(eventName, selector, methodName);
+            this.data = this.pants.parse(this.getContentType(), this.textContent);
+
+            // preparing template for the first time
+            this.template = this.pants.template.cloneNode(true);
+            this.appendChild(this.template);
+            pants.template(this.template);
+            this.template.bind(this);
+
+            this.pants.emit('created', this);
+        };
+
+        this.prototype.attachedCallback = function() {
+            // delegate events
+            this.delegateEvents_();
+
+            this.pants.emit('attached', this);
+        };
+
+        this.prototype.detachedCallback = function() {
+            // delegate events
+            this.undelegateEvents_();
+
+            this.pants.emit('detached', this);
+        };
+
+        this.prototype.attributeChangedCallback = function(attributeName, oldValue, newValue) {
+            this[attributeName] = newValue;
+
+            this.pants.emit(attributeName + 'Changed', oldValue, newValue, this);
+        };
+
+        this.prototype.delegateEvents_ = function() {
+            this.events_ = {};
+            Object.keys(this.pants.events).forEach(function(key) {
+                var segments = key.split(/\s+/),
+                    eventName = segments[0],
+                    selector = segments.slice(1).join(' '),
+                    callbacks = this.pants.events[key];
+
+                if (!this.events_[eventName]) {
+                    this.events_[eventName] = {};
+                    this.addEventHandler_(eventName);
                 }
-            }
 
-            Array.prototype.forEach.call(this.attributes, function(attribute) {
-                that.attributeChangedCallback(attribute.name);
+                this.events_[eventName][selector] = this.events_[eventName][selector] || [];
+                Array.prototype.push.apply(this.events_[eventName][selector], callbacks);
+            }.bind(this));
+        };
+
+        this.prototype.undelegateEvents_ = function() {
+            Object.keys(this.events_).forEach(function(eventName) {
+                if (this.events_[eventName]) {
+                    Object.keys(this.events_[eventName]).forEach(function(k) {
+                        (this.events_[eventName][k] || []).forEach(function(callback) {
+                            this.removeEventListener(this, eventName, callback);
+                        }.bind(this));
+                    }.bind(this));
+                }
+            }.bind(this));
+
+            delete this.events_;
+        };
+
+        this.prototype.addEventHandler_ = function(eventName) {
+            this.addEventListener(eventName, function(evt) {
+                var that = this,
+                    args = arguments;
+
+                Object.keys(this.events_[eventName]).forEach(function(selector) {
+                    Array.prototype.forEach.call(evt.path, function(el) {
+                        if (el instanceof HTMLElement && el === that.querySelector(selector)) {
+                            that.events_[eventName][selector].forEach(function(callback) {
+                                callback.apply(that, args);
+                            });
+                        }
+                    });
+                });
             });
-
-            var fragment = pants.template(this.template, this);
-            if (fragment) {
-                this.innerHTML = '';
-                this.appendChild(fragment);
-            }
-
-            if (o.onCreated) {
-                o.onCreated.apply(this, arguments);
-            }
-            // var shadowTemplate = scriptDoc.querySelector('template[role=shadow]');
-            // var surfaceTemplate = scriptDoc.querySelector('template[role=surface]');
-
-            // this.shadow = this.surface = null;
-            // if (shadowTemplate && surfaceTemplate) {
-            //     this.innerHTML = '<div role="shadow"></div><div role="surface"></div>';
-            //     this.shadow = this.querySelector('[role=shadow]').createShadowRoot();
-            //     this.surface = this.querySelector('[role=surface]');
-            // } else if (shadowTemplate) {
-            //     this.shadow = this.createShadowRoot();
-            // } else {
-            //     this.surface = this;
-            // }
-
-            // if (this.shadow) {
-            //     // pants.bind(this.shadow, shadowTemplate.innerHTML);
-            //     // this.shadow.appendChild(shadowTemplate.content.cloneNode(true));
-            // }
-
-            // if (this.surface) {
-            //     this.surface.appendChild(surfaceTemplate.content.cloneNode(true));
-            // }
-
-
         };
 
-        proto.attributeChangedCallback = function(attributeName) {
-            var propName = attributeName.camelize(true);
-            var value;
+        this.prototype.pants = this;
 
-            if (this.hasAttribute(attributeName)) {
-                value = this.getAttribute(attributeName) || true;
-            } else {
-                value = null;
-            }
-
-            this[propName] = value;
-            // if (!this.normalizedAttributes[propName] || this.normalizedAttributes[propName] != value) {
-            //     this.normalizedAttributes[propName] = value;
-            //     this.emit('change:' + propName, value, propName);
-            // }
-        };
-
-        return proto;
+        document.registerElement(this.componentName, this);
     };
 
-    pants.create = function(tagName, o) {
-        pants.populate(pants.getCurrentDocument());
-
-        var proto = createPants(tagName, o);
-        document.registerElement(tagName, {
-            'prototype': proto
-        });
-    };
-})(window);
+    return pants;
+}));

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pants: Element Data</title>
+
+    <!-- polymer platform dependencies -->
+    <script type="text/javascript" src="../vendor/platform/platform.js"></script>
+
+    <!-- pants inner dependencies -->
+    <script type="text/javascript" src="../js/pants.js"></script>
+
+    <!-- pants-observe inner dependencies -->
+    <script type="text/javascript" src="../vendor/pants-observe/js/weakmap.poly.js"></script>
+    <script type="text/javascript" src="../vendor/pants-observe/js/observe.poly.js"></script>
+    <script type="text/javascript" src="../vendor/pants-observe/js/path.js"></script>
+    <script type="text/javascript" src="../vendor/pants-observe/js/observe.js"></script>
+
+    <!-- pants-node inner dependencies -->
+    <!-- <script type="text/javascript" src="../js/node.js"></script> -->
+
+    <!-- pants-template inner dependencies -->
+    <script type="text/javascript" src="../vendor/pants-template/lib/mustache.js"></script>
+    <script type="text/javascript" src="../vendor/pants-template/js/expression.js"></script>
+    <script type="text/javascript" src="../vendor/pants-template/js/node.js"></script>
+    <script type="text/javascript" src="../vendor/pants-template/js/template.js"></script>
+</head>
+<body>
+    <!-- how to create new element -->
+    <pants-element name="format-user">
+        <template>
+            <div>
+                <textarea style="width: 100%" rows="10">{{ textData }}</textarea>
+            </div>
+            <div>
+                <div>
+                    <input type="text" value="{{data.name}}">
+                </div>
+                <div>
+                    <input type="text" value="{{data.company}}">
+                </div>
+            </div>
+        </template>
+        <script type="text/javascript">
+        (function(root) {
+            pants()
+                .on('created', function() {
+                    this.childNodes[0].remove();
+                })
+                .register();
+        })(this);
+        </script>
+    </pants-element>
+
+    <!-- how to use custom element -->
+    <format-user>
+    {
+        "name": "Ganesha",
+        "company": "Xinix Technology"
+    }
+    </format-user>
+</body>
+</html>
