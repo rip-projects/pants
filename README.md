@@ -25,7 +25,7 @@ Untuk menggunakan Pants, disarankan untuk mengganti default direktori untuk mele
 Setelah itu, kamu bisa menambahkan dependency Pants dengan cara menjalankan perintah berikut ini di terminal:
 
 ```bash
-bower install git@github.com:reekoheek/pants.git --save
+bower install xinix-technology/pants --save
 ```
 
 Thats it!
