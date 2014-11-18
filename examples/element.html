@@ -59,7 +59,7 @@
                 console.log('attribute(name) changed event triggered', arguments);
             }).event('click ::shadow #poke', function(evt) {
                 evt.preventDefault();
-                console.log('poking out');
+                // console.log('poking out');
                 this.dispatchEvent(new CustomEvent('poke'));
             })
             .register();
@@ -68,15 +68,15 @@
     </pants-element>
 
     <!-- how to use custom element -->
-    <say-hello name="Farid">
-    </say-hello>
+    <say-hello name="Farid"></say-hello>
 
     <script type="text/javascript">
     (function(root) {
         "use strict";
 
         document.querySelector('say-hello').addEventListener('poke', function(evt) {
-            console.log('poked', evt);
+            alert('Ouch!!!');
+            // console.log('poked', evt);
         });
     })(this);
     </script>

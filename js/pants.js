@@ -127,7 +127,11 @@
 
             return this;
         } else {
-            return this.parsers[contentType].call(this, textContent);
+            try {
+                return this.parsers[contentType].call(this, textContent);
+            } catch(e) {
+                console.error('Error parsing textContent:', textContent);
+            }
         }
 
     };
@@ -208,7 +212,14 @@
                 }
             });
 
-            this.data = this.pants.parse(this.getContentType(), this.textContent);
+            if (this.hasAttribute('data')) {
+                var refNode = document.getElementById(this.getAttribute('data'));
+                if (refNode) {
+                    this.data = refNode.data;
+                }
+            } else {
+                this.data = this.pants.parse(this.getContentType(), this.innerHTML);
+            }
 
             // preparing template for the first time
             this.template = this.pants.template.cloneNode(true);

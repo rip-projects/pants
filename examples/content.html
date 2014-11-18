@@ -28,17 +28,22 @@
 <body>
     <!-- how to create new element -->
     <pants-element name="format-user">
-        <template>
-            <div>
-                <textarea style="width: 100%" rows="10">{{ textData }}</textarea>
-            </div>
-            <div>
-                <div>
-                    <input type="text" value="{{data.name}}">
-                </div>
-                <div>
-                    <input type="text" value="{{data.company}}">
-                </div>
+        <template shadow>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Name</td>
+                        <td><input type="text" value="{{data.name}}"></td>
+                    </tr>
+                    <tr>
+                        <td>Company</td>
+                        <td><input type="text" value="{{data.company}}"></td>
+                    </tr>
+                    <tr>
+                        <td>Age</td>
+                        <td><input type="text" value="{{data.age}}"></td>
+                    </tr>
+                </tbody>
             </div>
         </template>
         <script type="text/javascript">
@@ -47,6 +52,34 @@
                 .on('created', function() {
                     this.childNodes[0].remove();
                 })
+                .parse('text/xml', function(content) {
+                    var fragment = document.createElement('div');
+                    fragment.innerHTML = content;
+
+                    var parse = function(node) {
+                        if (!node) {
+                            return;
+                        }
+
+                        var result = {};
+                        for (var i = 0; i < node.children.length; i++) {
+                            var child = node.children[i];
+                            result[child.tagName.toLowerCase()] = child.textContent;
+                        }
+
+                        return result;
+                    };
+
+                    return parse(fragment);
+                })
+                .parse('text/csv', function(content) {
+                    var f = ['name', 'company', 'age'];
+                    var result = {};
+                    content.trim().split(',').forEach(function(v, i) {
+                        result[f[i]] = v;
+                    });
+                    return result;
+                })
                 .register();
         })(this);
         </script>
@@ -54,10 +87,29 @@
 
     <!-- how to use custom element -->
     <format-user>
-    {
-        "name": "Ganesha",
-        "company": "Xinix Technology"
-    }
+        {
+            "name": "Alfa",
+            "company": "Xinix Technology",
+            "age": 23
+        }
     </format-user>
+
+    <hr>
+
+    <format-user type="text/xml">
+        <name>Alfa</name>
+        <company>Xinix Technology</company>
+        <age>23</age>
+    </format-user>
+
+    <hr>
+
+    <format-user type="text/csv" id="user">
+        Alfa,PT Sagara Xinix Solusitama,23
+    </format-user>
+
+    <hr>
+
+    <format-user data="user"></format-user>
 </body>
 </html>
