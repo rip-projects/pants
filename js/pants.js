@@ -40,9 +40,10 @@
 } (this, function() {
     "use strict";
 
-    var matches = function(el, selector) {
-        return (el.matches || el.matchesSelector || el.msMatchesSelector || el.mozMatchesSelector || el.webkitMatchesSelector || el.oMatchesSelector).call(el, selector);
-    };
+    // TODO any matches from element context not from global document?
+    // var matches = function(el, selector) {
+    //     return (el.matches || el.matchesSelector || el.msMatchesSelector || el.mozMatchesSelector || el.webkitMatchesSelector || el.oMatchesSelector).call(el, selector);
+    // };
 
     var pants = function(componentName, defaultAttributes) {
         switch(arguments.length) {
@@ -128,6 +129,9 @@
             return this;
         } else {
             try {
+                if (textContent.trim() === '') {
+                    return null;
+                }
                 return this.parsers[contentType].call(this, textContent);
             } catch(e) {
                 console.error('Error parsing textContent:', textContent);
@@ -223,8 +227,8 @@
 
             // preparing template for the first time
             this.template = this.pants.template.cloneNode(true);
-            this.appendChild(this.template);
-            pants.template(this.template);
+            // this.appendChild(this.template);
+            pants.template(this.template, this);
             this.template.bind(this);
 
             this.pants.emit('created', this);
@@ -284,15 +288,23 @@
 
         this.prototype.addEventHandler_ = function(eventName) {
             this.addEventListener(eventName, function(evt) {
-                var that = this,
-                    args = arguments;
+                var that = this;
 
                 Object.keys(this.events_[eventName]).forEach(function(selector) {
                     Array.prototype.forEach.call(evt.path, function(el) {
-                        if (el instanceof HTMLElement && el === that.querySelector(selector)) {
-                            that.events_[eventName][selector].forEach(function(callback) {
-                                callback.apply(that, args);
-                            });
+                        if (el instanceof HTMLElement) {
+                            var matches = that.querySelectorAll(selector);
+                            var i = 0;
+
+                            while (matches[i] && matches[i] !== el) {
+                                i++;
+                            }
+
+                            if (matches[i]) {
+                                that.events_[eventName][selector].forEach(function(callback) {
+                                    callback.call(that, evt, evt.detail, el);
+                                });
+                            }
                         }
                     });
                 });
