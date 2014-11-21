@@ -1,6 +1,6 @@
 {
   "name": "pants",
-  "version": "0.1.1",
+  "version": "0.1.5",
   "authors": [
     "Ganesha <reekoheek@gmail.com>"
   ],
@@ -22,9 +22,9 @@
   "private": true,
   "dependencies": {
     "platform": "Polymer/platform#^0.4.0",
-    "pants-observe": "xinix-technology/pants-observe#~0.1.0",
-    "pants-template": "xinix-technology/pants-template#~0.1.0",
     "js-yaml": "nodeca/js-yaml#~3.2.3",
-    "pants-path": "xinix-technology/pants-path#~0.1.0"
+    "pants-observe": "xinix-technology/pants-observe#~0.1.5",
+    "pants-template": "xinix-technology/pants-template#~0.1.5",
+    "pants-path": "xinix-technology/pants-path#~0.1.5"
   }
 }
