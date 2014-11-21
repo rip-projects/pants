@@ -84,6 +84,57 @@
 } (this, function() {
     "use strict";
 
+    var space_or_underbar = new RegExp( '[\ _]', 'g' );
+    var uppercase         = new RegExp( '([A-Z])', 'g' );
+    var underbar_prefix   = new RegExp( '^_' );
+
+    var underscore = function ( str, all_upper_case ){
+        if( all_upper_case && str === str.toUpperCase()) return str;
+
+        var str_path = str.split( '::' );
+        var i        = 0;
+        var j        = str_path.length;
+
+        for( ; i < j; i++ ){
+            str_path[ i ] = str_path[ i ].replace( uppercase, '_$1' );
+            str_path[ i ] = str_path[ i ].replace( underbar_prefix, '' );
+        }
+
+        return str_path.join( '/' ).toLowerCase();
+    };
+
+    var dasherize = function ( str ){
+        return str.replace( space_or_underbar, '-' );
+    };
+
+    var camelize = function ( str, low_first_letter ){
+        var str_path = str.split( '/' );
+        var i        = 0;
+        var j        = str_path.length;
+        var str_arr, init_x, k, l, first;
+
+        for( ; i < j; i++ ){
+            str_arr = str_path[ i ].split( '_' );
+            k       = 0;
+            l       = str_arr.length;
+
+            for( ; k < l; k++ ){
+                if( k !== 0 ){
+                    str_arr[ k ] = str_arr[ k ].toLowerCase();
+                }
+
+                first = str_arr[ k ].charAt( 0 );
+                first = low_first_letter && i === 0 && k === 0 ? first.toLowerCase() : first.toUpperCase();
+                str_arr[ k ] = first + str_arr[ k ].substring( 1 );
+            }
+
+            str_path[ i ] = str_arr.join( '' );
+        }
+
+        return str_path.join( '::' );
+    };
+
+
     // TODO any matches from element context not from global document?
     // var matches = function(el, selector) {
     //     return (el.matches || el.matchesSelector || el.msMatchesSelector || el.mozMatchesSelector || el.webkitMatchesSelector || el.oMatchesSelector).call(el, selector);
@@ -210,13 +261,20 @@
 
             // populate attribute values for the first time
             this.pants.attributeNames.forEach(function(attributeName) {
-                var value = this.getAttribute(attributeName);
+                var attributeNameUnderscored = underscore(attributeName),
+                    attributeNameDasherized = dasherize(attributeNameUnderscored),
+                    attributeNameCamelized = camelize(attributeNameUnderscored, 1);
+
+                var value = this.getAttribute(attributeNameDasherized);
+
                 if (!value) {
-                    value = this.getAttribute(attributeName + '-ref');
-                    console.log(attributeName, value);
+                    var ref = this.getAttribute(attributeNameDasherized + '-ref');
+                    if (ref) {
+                        value = pants.path().get(ref);
+                    }
                 }
                 if (value) {
-                    this[attributeName] = value;
+                    this[attributeNameCamelized] = value;
                 }
             }.bind(this));
 
@@ -252,7 +310,8 @@
 
             Object.defineProperty(this, 'textData', {
                 get: function() {
-                    return JSON.stringify(this.data, null, 4);
+                    var s = JSON.stringify(this.data, null, 4);
+                    return s;
                 },
 
                 set: function(textData) {
@@ -265,13 +324,14 @@
                 }
             });
 
-            if (this.hasAttribute('data')) {
+            if (this.innerHTML.trim() !== '') {
+                this.data = this.pants.parse(this.getContentType(), this.innerHTML);
+                this.innerHTML = '';
+            } else if (this.hasAttribute('data')) {
                 var refNode = document.getElementById(this.getAttribute('data'));
                 if (refNode) {
                     this.data = refNode.data;
                 }
-            } else {
-                this.data = this.pants.parse(this.getContentType(), this.innerHTML);
             }
 
             // preparing template for the first time
