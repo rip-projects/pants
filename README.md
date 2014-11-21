@@ -3,6 +3,12 @@ Pants
 
 Pants adalah sebuah sistem komponen frontend untuk aplikasi berbasis web. Pants berdasarkan spesifikasi HTML Web Component.
 
+HTML Web Component
+- Template          `<template></template>`
+- HTML Import       `<link rel="import" src="">`
+- Shadow DOM        `<div>#shadow-root</div>`
+- Custom element    `<my-fancy-element></my-fancy-element>`
+
 ## Instalasi menggunakan bower
 
 Pants menggunakan bower sebagai mengatur dependencies (ketergantungan) library
@@ -27,5 +33,9 @@ Setelah itu, kamu bisa menambahkan dependency Pants dengan cara menjalankan peri
 ```bash
 bower install xinix-technology/pants --save
 ```
+
+## Apa aja yang ada di Pants?
+
+
 
 Thats it!

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Parse Example</title>
+</head>
+<body>
+    <script type="text/javascript" src="../vendor/js-yaml/dist/js-yaml.min.js"></script>
+    <script type="text/javascript" src="../js/parse.js"></script>
+    <script type="text/javascript">
+    (function(root) {
+        "use strict";
+
+        var deepEqual = function(a, b) {
+            if (typeof a === 'object' || typeof b === 'object') {
+                var keys = [],
+                    i;
+                for(i in a) {
+                    keys.push(i);
+                }
+
+                for(i in b) {
+                    keys.push(i);
+                }
+
+                for(i = 0; i < keys.length; i++) {
+                    var key = keys[i],
+                        isSame = deepEqual(a[key], b[key]);
+                    if (!isSame) {
+                        return false;
+                    }
+                }
+
+                return true;
+            } else {
+                return a === b;
+            }
+        };
+
+        var assertEqual = function(a, b) {
+            if (!deepEqual(a, b)) {
+
+                throw JSON.stringify(a) + ' not equal ' + JSON.stringify(b);
+            } else {
+                console.log(JSON.stringify(a) + ' equal ' + JSON.stringify(b));
+            }
+        };
+
+        var input, output, result;
+
+        // default
+        output = {
+            "satu": "1",
+            "dua": "2",
+            "tiga": "3"
+        };
+        input = JSON.stringify(output);
+        result = pants.parse(input);
+        assertEqual(output, result);
+
+        // json
+        output = {
+            "satu": "1",
+            "dua": "2",
+            "tiga": "3"
+        };
+        input = JSON.stringify(output, 'application/json');
+        result = pants.parse(input);
+        assertEqual(output, result);
+
+        output = {
+            "satu": "1",
+            "dua": "2",
+            "tiga": "3"
+        };
+        input = JSON.stringify(output, 'text/json');
+        result = pants.parse(input);
+        assertEqual(output, result);
+
+        // yaml
+        output = {
+            "satu": "1",
+            "dua": "2",
+            "tiga": "3"
+        };
+        input = 'satu: "1"\ndua: "2"\ntiga: "3"';
+        result = pants.parse(input, 'application/x-yaml');
+        assertEqual(output, result);
+
+        // // csv
+        // output = {
+        //     "satu": "1",
+        //     "dua": "2",
+        //     "tiga": "3"
+        // };
+        // input = 'satu,dua,tiga\n"1","2","3"';
+        // result = pants.parse(input, 'text/csv');
+        // assertEqual(output, result);
+
+    })(this);
+    </script>
+</body>
+</html>

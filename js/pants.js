@@ -27,6 +27,50 @@
  * @author     Ganesha <reekoheek@gmail.com>
  * @copyright  2014 PT Sagara Xinix Solusitama
  */
+
+/**
+ * pants
+ *
+ * Available to access from window.pants
+ *
+ * How to create new pants
+ *
+ * <pre><code>
+ * var p = pants({string} name, {object} defaultAttributes)
+ * p.
+ * </code></pre>
+ *
+ * <pre><code>
+ * <pants-element>
+ *
+ * <template>
+ *     <a href="#" id="ohno">Poke</a>
+ * </template>
+ * <script>
+ * pants('new-shining-pants', {
+ *         "pocket": 2,
+ *         "zipper": "big"
+ *     }).on('created', function() {
+ *         // do something if a new shining pants created
+ *     }).on('attached', function() {
+ *         // do something if a new shining pants attached
+ *     }).on('detached', function() {
+ *         // do something if a new shining pants detached
+ *     }).on('pocketChanged', function() {
+ *         // do something if attribute with name: pocket changed
+ *     }).event('click #ohno', function() {
+ *
+ *     })
+ *     </script>
+ * </pants-element>
+ * </code></pre>
+ *
+ *
+ * <pre>
+ * <new-shining-pants pocket="1" zipper="no"></new-shining-pants>
+ * </pre>
+ */
+
 (function(root, factory) {
     "use strict";
 
@@ -46,7 +90,8 @@
     // };
 
     var pants = function(componentName, defaultAttributes) {
-        switch(arguments.length) {
+        var length = arguments.length;
+        switch(length) {
             case 1:
                 if (typeof componentName === 'object') {
                     defaultAttributes = componentName;
@@ -166,6 +211,10 @@
             // populate attribute values for the first time
             this.pants.attributeNames.forEach(function(attributeName) {
                 var value = this.getAttribute(attributeName);
+                if (!value) {
+                    value = this.getAttribute(attributeName + '-ref');
+                    console.log(attributeName, value);
+                }
                 if (value) {
                     this[attributeName] = value;
                 }
