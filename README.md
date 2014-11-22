@@ -1,7 +1,7 @@
 Pants
 =====
 
-[![License](http://img.shields.io/badge/license-MIT-red.svg?style=flat-square)](https://github.com/reekoheek/pants/blob/master/LICENSE)
+[![License](http://img.shields.io/badge/license-MIT-red.svg?style=flat-square)](https://github.com/xinix-technology/pants/blob/master/LICENSE)
 [![Bower](http://img.shields.io/bower/v/xinix-technology/pants.svg?style=flat-square)](https://github.com/xinix-technology/pants)
 
 Pants adalah sebuah sistem komponen frontend untuk aplikasi berbasis web. Pants berdasarkan spesifikasi HTML Web Component.
