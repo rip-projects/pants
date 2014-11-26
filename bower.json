@@ -6,9 +6,7 @@
   ],
   "description": "Dont make your web shame without pants",
   "keywords": [
-    "component",
-    "web",
-    "component",
+    "web-components",
     "js"
   ],
   "license": "MIT",
@@ -19,9 +17,8 @@
     "test",
     "tests"
   ],
-  "private": true,
   "dependencies": {
-    "platform": "Polymer/platform#^0.4.0",
+    "webcomponentsjs": "~0.5.1",
     "js-yaml": "nodeca/js-yaml#~3.2.3",
     "pants-observe": "xinix-technology/pants-observe#master",
     "pants-template": "xinix-technology/pants-template#master",
