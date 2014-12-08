@@ -152,18 +152,17 @@
         }
 
         var scope = document.currentScript.ownerDocument;
-
-        if (!componentName) {
-            var node = document.currentScript;
-            do {
-                node = node.parentNode;
-                if (node && node.tagName === 'PANTS-ELEMENT') {
+        var node = document.currentScript;
+        do {
+            node = node.parentNode;
+            if (node && node.tagName === 'PANTS-ELEMENT') {
+                if (!componentName) {
                     componentName = node.getAttribute('name');
-                    scope = node;
-                    break;
                 }
-            } while (node);
-        }
+                scope = node;
+                break;
+            }
+        } while (node);
 
         if (!componentName) {
             throw "Element does not have name!";

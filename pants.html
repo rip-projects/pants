@@ -5,8 +5,19 @@
     <title>Pants</title>
 </head>
 <body>
+    <link rel="stylesheet" href="./css/pants.css">
     <script type="text/javascript" src="./js/pants.js"></script>
 
     <link rel="import" href="../pants-template/pants-template.html">
+
+    <pants-element name="pants-data">
+        <script type="text/javascript">
+            pants('pants-data')
+                .on('created', function() {
+                    pants.path().set(this.id, this.data);
+                })
+                .register(HTMLScriptElement.prototype, 'script');
+        </script>
+    </pants-element>
 </body>
 </html>
