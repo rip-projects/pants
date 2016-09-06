@@ -171,16 +171,23 @@
         return new Pants(componentName, scope, defaultAttributes);
     };
 
+    var htmlParse_ = function(textContent) {
+        console.log(this);
+
+    };
+
     var Pants = pants.Pants = function(componentName, scope, defaultAttributes) {
         this.componentName = componentName;
         this.defaultAttributes = defaultAttributes || {};
         this.attributeNames = Object.keys(this.defaultAttributes);
         this.scope = scope;
-        this.template = scope.querySelector('template') || document.createElement('template');
+        this.template = scope.querySelector('template');
         this.listeners = {};
         this.events = {};
+        this.contentType = null;
 
         this.parsers = {
+            'text/html': htmlParse_,
             'application/json': JSON.parse
         };
     };
@@ -209,6 +216,11 @@
         return this;
     };
 
+    Pants.prototype.setContentType = function(contentType) {
+        this.contentType = contentType;
+        return this;
+    };
+
     Pants.prototype.parse = function(contentType, textContent) {
 
         // registering
@@ -229,7 +241,7 @@
                 }
                 return this.parsers[contentType].call(this, textContent);
             } catch(e) {
-                console.error('Error parsing textContent:', textContent);
+                console.warn('Error parsing textContent:', textContent);
             }
         }
 
@@ -245,11 +257,9 @@
             this.extends = ext;
         }
 
-        this.prototype.getContentType = function() {
-            return this.getAttribute('type') || 'application/json';
-        };
-
         this.prototype.createdCallback = function() {
+            this.contentType = this.getAttribute('type') || that.contentType;
+
             Object.keys(this.pants.defaultAttributes).forEach(function(key) {
                 var attr = this.pants.defaultAttributes[key];
                 if (typeof attr === 'function') {
@@ -277,67 +287,77 @@
                 }
             }.bind(this));
 
-            var changeData = function(data) {
-                if (this._data === data) {
-                    return;
-                }
+            // var changeData = function(data) {
+            //     if (this._data === data) {
+            //         return;
+            //     }
 
-                var notifier = Object.getNotifier(this);
+            //     var notifier = Object.getNotifier(this);
 
-                this._data = data;
+            //     this._data = data;
 
-                notifier.notify({
-                    type:'update',
-                    name: 'data'
-                });
+            //     notifier.notify({
+            //         type:'update',
+            //         name: 'data'
+            //     });
 
-                notifier.notify({
-                    type:'update',
-                    name: 'textData'
-                });
-            }.bind(this);
+            //     notifier.notify({
+            //         type:'update',
+            //         name: 'textData'
+            //     });
+            // }.bind(this);
 
-            Object.defineProperty(this, 'data', {
-                get: function() {
-                    return this._data;
-                },
+            // Object.defineProperty(this, 'data', {
+            //     get: function() {
+            //         return this._data;
+            //     },
 
-                set: function(data) {
-                    changeData(data);
-                }
-            });
+            //     set: function(data) {
+            //         changeData(data);
+            //     }
+            // });
 
-            Object.defineProperty(this, 'textData', {
-                get: function() {
-                    var s = JSON.stringify(this.data, null, 4);
-                    return s;
-                },
+            // Object.defineProperty(this, 'textData', {
+            //     get: function() {
+            //         var s = JSON.stringify(this.data, null, 4);
+            //         return s;
+            //     },
 
-                set: function(textData) {
-                    try {
-                        var data = this.pants.parse(this.getContentType(), textData);
-                        changeData(data);
-                    } catch(e) {
+            //     set: function(textData) {
+            //         try {
+            //             changeData(this.pants.parse(this));
+            //         } catch(e) {
 
-                    }
-                }
-            });
+            //         }
+            //     }
+            // });
 
+            // // if content type set
+            // if (this.contentType) {
+            //     if (this.innerHTML.trim() !== '') {
+            //         this.data = this.pants.parse(this.getContentType(), this.innerHTML);
+            //         this.innerHTML = '';
+            //     } else if (this.hasAttribute('data')) {
+            //         var refNode = document.getElementById(this.getAttribute('data'));
+            //         if (refNode) {
+            //             this.data = refNode.data;
+            //         }
+            //     }
+            // }
+
+            // preparing template for the first time
             if (this.innerHTML.trim() !== '') {
-                this.data = this.pants.parse(this.getContentType(), this.innerHTML);
-                this.innerHTML = '';
-            } else if (this.hasAttribute('data')) {
-                var refNode = document.getElementById(this.getAttribute('data'));
-                if (refNode) {
-                    this.data = refNode.data;
+                for(var i = 0; i < this.childNodes.length; i++) {
+                    this.childNodes[i].parentTemplate_ = this;
+                    this.childNodes[i].bind(this);
                 }
             }
 
-            // preparing template for the first time
-            this.template = this.pants.template.cloneNode(true);
-            // this.appendChild(this.template);
-            pants.template(this.template, this);
-            this.template.bind(this);
+            if (this.pants.template) {
+                this.template = this.pants.template.cloneNode(true);
+                pants.template(this.template, this);
+                this.template.bind(this);
+            }
 
             this.pants.emit('created', this);
         };
@@ -396,26 +416,30 @@
 
         this.prototype.addEventHandler_ = function(eventName) {
             this.addEventListener(eventName, function(evt) {
-                var that = this;
-
                 Object.keys(this.events_[eventName]).forEach(function(selector) {
-                    Array.prototype.forEach.call(evt.path, function(el) {
-                        if (el instanceof HTMLElement) {
-                            var matches = that.querySelectorAll(selector);
-                            var i = 0;
+                    if (selector) {
+                        Array.prototype.forEach.call(evt.path, function(el) {
+                            if (el instanceof HTMLElement) {
+                                var matches, i = 0;
 
-                            while (matches[i] && matches[i] !== el) {
-                                i++;
-                            }
+                                matches = this.querySelectorAll(selector);
+                                while (matches[i] && matches[i] !== el) {
+                                    i++;
+                                }
 
-                            if (matches[i]) {
-                                that.events_[eventName][selector].forEach(function(callback) {
-                                    callback.call(that, evt, evt.detail, el);
-                                });
+                                if (matches[i]) {
+                                    this.events_[eventName][selector].forEach(function(callback) {
+                                        callback.call(this, evt, evt.detail, el);
+                                    }.bind(this));
+                                }
                             }
-                        }
-                    });
-                });
+                        }.bind(this));
+                    } else {
+                        this.events_[eventName][selector].forEach(function(callback) {
+                            callback.call(this, evt, evt.detail, this);
+                        }.bind(this));
+                    }
+                }.bind(this));
             });
         };
 
